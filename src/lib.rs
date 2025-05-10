@@ -1,11 +1,16 @@
 use std::error::Error;
-use std::{env, fs};
+use std::fs;
+
+pub enum Flag {
+    CaseInsensitive,
+}
 
 pub struct Config {
     pub query: String, 
     pub file_path: String,
-    pub ignore_case: bool
+    pub flag: Option<Flag>
 }
+
 
 impl Config {
     pub fn build(args: &[String]) -> Result<Config, &'static str> {
@@ -13,24 +18,39 @@ impl Config {
             return Err("Not enough parameters");
         }
 
+        if args.len() > 4 {
+            return Err("Too many parameters");
+        }
+
         let query = args[1].clone();
         let file_path = args[2].clone();
-        let ignore_case = env::var("IGNORE_CASE").is_ok();
+        let mut flag: Option<Flag> = None;
+
+        if args.len() == 4 {
+            let input_flag = &args[3];
+            match input_flag.as_str() {
+                "-i" => {
+                    flag = Some(Flag::CaseInsensitive);
+                }
+                _ => {
+                    return Err("Unsupported Flag");
+                }
+            }
+        }
 
         Ok( Config {
             query,
             file_path,
-            ignore_case
+            flag
         })
     }
 }
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let contents = fs::read_to_string(config.file_path)?;
-    let results = if config.ignore_case {
-        search_case_insensitive(&config.query, &contents)
-    } else {
-        search(&config.query, &contents)
+    let results = match config.flag {
+        Some(Flag::CaseInsensitive) => search_case_insensitive(&config.query, &contents),
+        None => search(&config.query, &contents)
     };
 
     for line in results {
@@ -100,6 +120,5 @@ Trust me.";
             vec!["Rust:", "Trust me."],
             search_case_insensitive(query, contents)
         );
-
     }
 }
