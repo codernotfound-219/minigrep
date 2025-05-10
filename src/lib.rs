@@ -13,30 +13,29 @@ pub struct Config {
 
 
 impl Config {
-    pub fn build(args: &[String]) -> Result<Config, &'static str> {
-        if args.len() < 3 {
-            return Err("Not enough parameters");
-        }
+    pub fn build(mut args: impl Iterator<Item = String>) -> Result<Config, &'static str> {
+        args.next(); // ignore the binary file path
 
-        if args.len() > 4 {
-            return Err("Too many parameters");
-        }
+        let query = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Could not read query")
+        };
 
-        let query = args[1].clone();
-        let file_path = args[2].clone();
-        let mut flag: Option<Flag> = None;
+        let file_path = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Could not read file path")
+        };
 
-        if args.len() == 4 {
-            let input_flag = &args[3];
-            match input_flag.as_str() {
-                "-i" => {
-                    flag = Some(Flag::CaseInsensitive);
+        let flag = match args.next() {
+            Some(arg) => {
+                match arg.as_str() {
+                    "-i" => Some(Flag::CaseInsensitive),
+                    _ => return Err("Unsupported Flag")
                 }
-                _ => {
-                    return Err("Unsupported Flag");
-                }
-            }
-        }
+            },
+            None => None
+        };
+
 
         Ok( Config {
             query,
@@ -63,30 +62,19 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
     // contents has been linked with lifetime
     // as it is directly related to the result vec
-    let mut results = Vec::new();
-
-    for line in contents.lines() {
-        if line.contains(query) {
-            results.push(line);
-        }
-    }
-
-    results
+    contents
+        .lines()
+        .filter(|line| line.contains(query))
+        .collect()
 }
 
 pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
     // contents has been linked with lifetime
     // as it is directly related to the result vec
-    let mut results = Vec::new();
-    let query = query.to_lowercase();
-
-    for line in contents.lines() {
-        if line.to_lowercase().contains(&query) {
-            results.push(line);
-        }
-    }
-
-    results
+    contents
+        .lines()
+        .filter(|line| line.to_lowercase().contains(&query.to_lowercase()))
+        .collect()
 }
 
 #[cfg(test)]
