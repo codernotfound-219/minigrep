@@ -36,6 +36,11 @@ impl Config {
             None => None
         };
 
+        match args.next() {
+            Some(_) => return Err("Unsupported parameters supplied"),
+            None => ()
+        }
+
         Ok( Config {
             query,
             file_path,
