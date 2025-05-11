@@ -36,7 +36,6 @@ impl Config {
             None => None
         };
 
-
         Ok( Config {
             query,
             file_path,
