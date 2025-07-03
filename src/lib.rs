@@ -36,10 +36,7 @@ impl Config {
             None => None
         };
 
-        match args.next() {
-            Some(_) => return Err("Unsupported parameters supplied"),
-            None => ()
-        }
+        if args.next().is_some() { return Err("Unsupported parameters supplied") }
 
         Ok( Config {
             query,
